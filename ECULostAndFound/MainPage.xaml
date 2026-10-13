@@ -1,0 +1,8 @@
+﻿<ContentPage x:Class="MvvmDemoApp.MainPage">
+
+    <VerticalStackLayout Padding="24" Spacing="12">
+        <Entry Text="{Binding Name}" Placeholder="Type your name" />
+        <Button Text="Update greeting" Command="{Binding UpdateGreetingCommand}" />
+        <Label Text="{Binding GreetingText}" FontSize="24" />
+    </VerticalStackLayout>
+</ContentPage>

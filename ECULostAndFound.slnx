@@ -1,4 +1,3 @@
 <Solution>
-  <Project Path="src/ECULostAndFound.Api/ECULostAndFound.Api.csproj" />
-  <Project Path="src/ECULostAndFound.App/ECULostAndFound.App.csproj" />
+  <Project Path="ECULostAndFound/ECULostAndFound.csproj" />
 </Solution>
