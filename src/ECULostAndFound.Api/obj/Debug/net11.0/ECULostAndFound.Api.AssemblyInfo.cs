@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ECULostAndFound.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9ae22722c6b4a87090acfdf50bd088aba845817c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1fc17e7d54bc8986f1b747c8e485ed6e91d43d2b")]
 [assembly: System.Reflection.AssemblyProductAttribute("ECULostAndFound.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ECULostAndFound.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
