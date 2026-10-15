@@ -1,4 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.Input;
+using ECULostAndFound.App.Models;
+using ECULostAndFound.App.Data;
+
 
 namespace ECULostAndFound.App.ViewModels;
 
