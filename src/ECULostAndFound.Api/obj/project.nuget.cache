@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "ABErzmN8Huw=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Pulsa\\4540 Group Project\\src\\ECULostAndFound.Api\\ECULostAndFound.Api.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Pulsa\\.nuget\\packages\\microsoft.aspnetcore.openapi\\11.0.0-preview.7.26381.103\\microsoft.aspnetcore.openapi.11.0.0-preview.7.26381.103.nupkg.sha512",
+    "C:\\Users\\Pulsa\\.nuget\\packages\\microsoft.openapi\\3.9.0\\microsoft.openapi.3.9.0.nupkg.sha512"
+  ],
+  "logs": []
+}
