@@ -25,3 +25,14 @@ ECU lost and Found lets faculty and Students upload and browse lost items that h
 ## Week 2 Going Forward
 - Now that template is made work on adding specific components to the code
 - Discuss in more detail how we want the app to look and its functions
+
+## Week 2 Progress
+- Implemented CRUD operations
+- Implemented change tracking
+
+
+## Week 3 Going Forward
+- Implement a push endpoint to server
+- Implement  pending local changes to sync to server
+- Implement pending local changes after pushing to server
+
