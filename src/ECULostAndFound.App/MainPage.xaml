@@ -1,39 +1,77 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage 
+<ContentPage
     x:Class="ECULostAndFound.App.MainPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Title="{Binding Title}">
+    xmlns:vm="clr-namespace:ECULostAndFound.App.ViewModels"
+    xmlns:models="clr-namespace:ECULostAndFound.App.Models"
+    x:DataType="vm:MainViewModel"
+    Title="{Binding PageTitle}">
 
-    <ScrollView>
-        <VerticalStackLayout
-            Padding="30"
-            Spacing="20"
-            VerticalOptions="Center">
+    <Grid Padding="20"
+          RowDefinitions="Auto,Auto,Auto,Auto,*"
+          RowSpacing="12">
 
-            <Label
-                Text="{Binding Title}"
-                FontSize="32"
-                FontAttributes="Bold"
-                HorizontalOptions="Center" />
+        <Label Grid.Row="0"
+               Text="{Binding PageTitle}"
+               FontSize="26"
+               FontAttributes="Bold" />
 
-            <Label
-                Text="Campus Lost &amp; Found"
-                FontSize="20"
-                HorizontalOptions="Center" />
+        <VerticalStackLayout Grid.Row="1" Spacing="8">
+            <Entry Placeholder="Item name"
+                   Text="{Binding ItemTitle, Mode=TwoWay}" />
 
-            <Label 
-                Text="{Binding StatusMessage}"
-                FontSize="16"
-                HorizontalOptions="Center" />
+            <Editor Placeholder="Description"
+                    AutoSize="TextChanges"
+                    Text="{Binding Description, Mode=TwoWay}" />
 
-            <Label
-                Text="Report and find lost items, when while offline."
-                FontSize="14"
-                HorizontalOptions="Center"
-                HorizontalTextAlignment="Center"  />
-
+            <Entry Placeholder="Location"
+                   Text="{Binding Location, Mode=TwoWay}" />
         </VerticalStackLayout>
-    </ScrollView>
 
+        <Button Grid.Row="2"
+                Text="Save item"
+                Command="{Binding SaveItemCommand}" />
+
+        <Label Grid.Row="3"
+               Text="{Binding StatusMessage}"
+               HorizontalOptions="Center" />
+
+        <CollectionView Grid.Row="4"
+                        ItemsSource="{Binding Items}"
+                        EmptyView="No items yet. Add an item above.">
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:LostAndFoundItem">
+                    <Border Padding="12"
+                            Margin="0,4"
+                            Stroke="#CCCCCC"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 8">
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="{Binding Title}"
+                                   FontSize="18"
+                                   FontAttributes="Bold" />
+
+                            <Label Text="{Binding Description}" />
+                            <Label Text="{Binding Location, StringFormat='Location: {0}'}" />
+
+                            <HorizontalStackLayout Spacing="8">
+                                <Button Text="Edit"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}},
+                                                          Path=EditItemCommand}"
+                                        CommandParameter="{Binding .}" />
+
+                                <Button Text="Delete"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}},
+                                                          Path=DeleteItemCommand}"
+                                        CommandParameter="{Binding .}" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
 </ContentPage>
