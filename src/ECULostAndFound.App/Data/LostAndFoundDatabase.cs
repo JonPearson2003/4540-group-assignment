@@ -19,8 +19,14 @@ public sealed class LostAndFoundDatabase
 			SQLiteOpenFlags.Create |
 			SQLiteOpenFlags.SharedCache);
 
-		initialization = database.CreateTableAsync<LostAndFoundItem>();
+		initialization = InitializeAsync();
+
 	}
+	private async Task InitializeAsync()
+{
+    await database.CreateTableAsync<LostAndFoundItem>();
+    await database.CreateTableAsync<ChangesTable>();
+}	
 
 	public async Task<List<LostAndFoundItem>> GetLostAndFoundItemsAsync()
 	{
@@ -50,5 +56,11 @@ public sealed class LostAndFoundDatabase
 	{
 		await initialization;
 		return await database.DeleteAsync(item);
+	}
+
+	public async Task<int> SaveChangeAsync(ChangesTable change)
+	{
+    	await initialization;
+    	return await database.InsertAsync(change);
 	}
 }
