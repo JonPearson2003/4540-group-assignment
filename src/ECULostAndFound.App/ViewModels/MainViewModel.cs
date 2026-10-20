@@ -2,13 +2,13 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ECULostAndFound.App.Models;
-using ECULostAndFound.App.Services;
+using ECULostAndFound.App.Data;
 
 namespace ECULostAndFound.App.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {
-    private readonly LocalDatabaseService _database;
+    private readonly LostAndFoundDatabase _database;
     private LostAndFoundItem? _itemBeingEdited;
 
     [ObservableProperty]
@@ -29,20 +29,20 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _statusMessage = "Welcome to the ECU Lost and Found App!";
 
-    public MainViewModel(LocalDatabaseService database)
+    public MainViewModel(LostAndFoundDatabase database)
     {
         _database = database;
-        LoadItems();
-    }
-
-    private void LoadItems()
-    {
-        Items = new ObservableCollection<LostAndFoundItem>(
-            _database.GetItems());
     }
 
     [RelayCommand]
-    private void SaveItem()
+    private async Task LoadItemsAsync()
+    {
+        var items = await _database.GetLostAndFoundItemsAsync();
+        Items = new ObservableCollection<LostAndFoundItem>(items);
+    }
+
+    [RelayCommand]
+    private async Task SaveItemAsync()
     {
         if (string.IsNullOrWhiteSpace(ItemTitle))
         {
@@ -59,7 +59,13 @@ public partial class MainViewModel : ObservableObject
                 Location = Location.Trim()
             };
 
-            _database.CreateItem(item);
+            var result = await _database.SaveLostAndFoundItemAsync(item);
+            if (result <= 0)
+            {
+                StatusMessage = "Could not save the item.";
+                return;
+            }
+
             Items.Add(item);
             StatusMessage = "Item added.";
         }
@@ -69,13 +75,14 @@ public partial class MainViewModel : ObservableObject
             _itemBeingEdited.Description = Description.Trim();
             _itemBeingEdited.Location = Location.Trim();
 
-            if (!_database.UpdateItem(_itemBeingEdited))
+            var result = await _database.SaveLostAndFoundItemAsync(_itemBeingEdited);
+            if (result <= 0)
             {
                 StatusMessage = "Could not find item to update.";
                 return;
             }
 
-            LoadItems();
+            await LoadItemsAsync();
             _itemBeingEdited = null;
             StatusMessage = "Item updated.";
         }
@@ -94,15 +101,22 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void DeleteItem(LostAndFoundItem item)
+    private async Task DeleteItemAsync(LostAndFoundItem item)
     {
-        if (!_database.DeleteItem(item.Id))
+        var result = await _database.DeleteLostAndFoundItemAsync(item);
+        if (result <= 0)
         {
             StatusMessage = "Could not find item to delete.";
             return;
         }
 
         Items.Remove(item);
+        if (ReferenceEquals(_itemBeingEdited, item))
+        {
+            _itemBeingEdited = null;
+            ClearForm();
+        }
+
         StatusMessage = "Item deleted.";
     }
 

@@ -1,4 +1,4 @@
-﻿using ECULostAndFound.App.Services;
+﻿using ECULostAndFound.App.Data;
 using ECULostAndFound.App.ViewModels;
 using Microsoft.Extensions.Logging;
 
@@ -18,7 +18,7 @@ public static class MauiProgram
 			});
 
 			// Services
-			builder.Services.AddSingleton<LocalDatabaseService>();
+			builder.Services.AddSingleton<LostAndFoundDatabase>();
 
 			// ViewModels
 			builder.Services.AddTransient<MainViewModel>();

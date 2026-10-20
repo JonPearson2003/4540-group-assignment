@@ -12,4 +12,10 @@ public partial class MainPage : ContentPage
 		_viewModel = viewModel;
 		BindingContext = _viewModel;
 	}
+
+	protected override async void OnAppearing()
+	{
+		base.OnAppearing();
+		await _viewModel.LoadItemsCommand.ExecuteAsync(null);
+	}
 }
