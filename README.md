@@ -55,3 +55,9 @@ ECU lost and Found lets faculty and Students upload and browse lost items that h
 - Implement  pending local changes to sync to server
 - Implement pending local changes after pushing to server
 
+## Before Pending Changes Screenshot
+![App before pending changes were added](./Images/screenshots/before-pending-changes.png)
+
+
+## After Pending Changes Implementation Screenshot
+![App showing a queued create operation under Pending sync changes](./Images/screenshots/after-pending-changes.png)
