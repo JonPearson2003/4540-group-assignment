@@ -61,3 +61,8 @@ ECU lost and Found lets faculty and Students upload and browse lost items that h
 
 ## After Pending Changes Implementation Screenshot
 ![App showing a queued create operation under Pending sync changes](./Images/screenshots/after-pending-changes.png)
+
+## Week 4 Going Forward
+- Add request server changes newer than the device's last sync time
+- Apply incoming chnages to the local database
+- Be able to handle deletes (tombstones or flags)
