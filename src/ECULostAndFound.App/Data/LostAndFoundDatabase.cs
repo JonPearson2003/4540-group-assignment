@@ -26,6 +26,7 @@ public sealed class LostAndFoundDatabase
 {
     await database.CreateTableAsync<LostAndFoundItem>();
     await database.CreateTableAsync<ChangesTable>();
+	await database.CreateTableAsync<PendingSyncChange>();
 }	
 
 	public async Task<List<LostAndFoundItem>> GetLostAndFoundItemsAsync()
@@ -62,5 +63,41 @@ public sealed class LostAndFoundDatabase
 	{
     	await initialization;
     	return await database.InsertAsync(change);
+	}
+
+	public async Task<int> QueuePendingChangeAsync(PendingSyncChange change)
+	{
+		await initialization;
+
+		if (string.IsNullOrWhiteSpace(change.ChangeId))
+			change.ChangeId = Guid.NewGuid().ToString();
+
+		change.IsSynced = false;
+		return await database.InsertAsync(change);
+	}
+
+	public async Task<List<PendingSyncChange>> GetPendingChangesAsync()
+	{
+		await initialization;
+
+		return await database.Table<PendingSyncChange>()
+			.Where(change => !change.IsSynced)
+			.OrderBy(change => change.Id)
+			.ToListAsync();
+	}
+
+	public async Task<int> MarkChangeSyncedAsync(int id)
+	{
+		await initialization;
+
+		var change = await database.Table<PendingSyncChange>()
+			.Where(change => change.Id == id)
+			.FirstOrDefaultAsync();
+
+		if (change is null)
+			return 0;
+
+		change.IsSynced = true;
+		return await database.UpdateAsync(change);
 	}
 }

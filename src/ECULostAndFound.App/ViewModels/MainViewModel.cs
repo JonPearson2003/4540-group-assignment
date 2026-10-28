@@ -8,6 +8,7 @@ namespace ECULostAndFound.App.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {
+    private const string DeviceUserId = "Development-device-1";
     private readonly LostAndFoundDatabase _database;
     private LostAndFoundItem? _itemBeingEdited;
 
@@ -23,6 +24,9 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private ObservableCollection<ChangesTable> _changes = new();
+
+    [ObservableProperty]
+    private ObservableCollection<PendingSyncChange> _pendingChanges = new();
 
     [ObservableProperty]
     private string _itemTitle = string.Empty;
@@ -46,103 +50,107 @@ public partial class MainViewModel : ObservableObject
     {
         var items = await _database.GetLostAndFoundItemsAsync();
         Items = new ObservableCollection<LostAndFoundItem>(items);
+
+        await LoadPendingChangesAsync();
     }
 
-    
-[RelayCommand]
-private async Task SaveItemAsync()
-{
-    if (string.IsNullOrWhiteSpace(ItemTitle))
+    private async Task LoadPendingChangesAsync()
     {
-        StatusMessage = "Enter an item name.";
-        return;
+        var pendingChanges = await _database.GetPendingChangesAsync();
+        PendingChanges = new ObservableCollection<PendingSyncChange>(pendingChanges);
     }
 
-    if (_itemBeingEdited is null)
+    [RelayCommand]
+    private async Task SaveItemAsync()
     {
-        var item = new LostAndFoundItem
+        if (string.IsNullOrWhiteSpace(ItemTitle))
         {
-            Title = ItemTitle.Trim(),
-            Description = Description.Trim(),
-            Location = Location.Trim()
-        };
-
-        var result = await _database.SaveLostAndFoundItemAsync(item);
-        if (result <= 0)
-        {
-            StatusMessage = "Could not save the item.";
+            StatusMessage = "Enter an item name.";
             return;
         }
-
-        Items.Add(item);
-        StatusMessage = "Item added.";
-
-        var change = new ChangesTable
-        {
-            Item_Id = item.Id,
-            ChangeType = "Create",
-            ColumnName = "All",
-            OldValue = string.Empty,
-            NewValue = $"Title: {item.Title}, Description: {item.Description}, Location: {item.Location}",
-            ChangeDate = DateTime.UtcNow
-        };
-
-        Changes.Add(change);
-        await _database.SaveChangeAsync(change);
-    }
-    else
-    {
 
         string newTitle = ItemTitle.Trim();
         string newDescription = Description.Trim();
         string newLocation = Location.Trim();
 
-        bool hasChanged =
-            _oldTitle != newTitle ||
-            _oldDescription != newDescription ||
-            _oldLocation != newLocation;
-
-        // Apply the new values
-        _itemBeingEdited.Title = newTitle;
-        _itemBeingEdited.Description = newDescription;
-        _itemBeingEdited.Location = newLocation;
-
-        var result = await _database.SaveLostAndFoundItemAsync(
-            _itemBeingEdited);
-
-        if (result <= 0)
+        if (_itemBeingEdited is null)
         {
-            StatusMessage = "Could not find item to update.";
-            return;
-        }
-
-        // Add a change record only if there was a change. Records new and old values for all fields in a single change record.
-        if (hasChanged)
-        {
-            var change = new ChangesTable
+            var item = new LostAndFoundItem
             {
-                Item_Id = _itemBeingEdited.Id,
-                ChangeType = "Edit",
-                ColumnName = "All",
-                OldValue = $"Title: {_oldTitle}, Description: {_oldDescription}, Location: {_oldLocation}",
-                NewValue = $"Title: {newTitle}, Description: {newDescription}, Location: {newLocation}",
-                ChangeDate = DateTime.UtcNow
+                Title = newTitle,
+                Description = newDescription,
+                Location = newLocation
             };
 
-            Changes.Add(change);
-            await _database.SaveChangeAsync(change);
+            var result = await _database.SaveLostAndFoundItemAsync(item);
+            if (result <= 0)
+            {
+                StatusMessage = "Could not save the item.";
+                return;
+            }
+
+            Items.Add(item);
+
+            var auditChange = new ChangesTable
+            {
+                Item_Id = item.Id,
+                ChangeType = "Create",
+                ColumnName = "All",
+                OldValue = string.Empty,
+                NewValue = $"Title: {item.Title}, Description: {item.Description}, Location: {item.Location}",
+                ChangeDate = item.LastUpdated
+            };
+
+            await SaveAuditChangeAsync(auditChange);
+            await QueueSyncChangeAsync(item.Id, "create", item.LastUpdated);
+
+            StatusMessage = "Item added and queued for sync.";
+        }
+        else
+        {
+            var item = _itemBeingEdited;
+            bool hasChanged =
+                _oldTitle != newTitle ||
+                _oldDescription != newDescription ||
+                _oldLocation != newLocation;
+
+            item.Title = newTitle;
+            item.Description = newDescription;
+            item.Location = newLocation;
+
+            var result = await _database.SaveLostAndFoundItemAsync(item);
+            if (result <= 0)
+            {
+                StatusMessage = "Could not find item to update.";
+                return;
+            }
+
+            if (hasChanged)
+            {
+                var auditChange = new ChangesTable
+                {
+                    Item_Id = item.Id,
+                    ChangeType = "Edit",
+                    ColumnName = "All",
+                    OldValue = $"Title: {_oldTitle}, Description: {_oldDescription}, Location: {_oldLocation}",
+                    NewValue = $"Title: {newTitle}, Description: {newDescription}, Location: {newLocation}",
+                    ChangeDate = item.LastUpdated
+                };
+
+                await SaveAuditChangeAsync(auditChange);
+                await QueueSyncChangeAsync(item.Id, "update", item.LastUpdated);
+            }
+
+            await LoadItemsAsync();
+
+            _itemBeingEdited = null;
+            StatusMessage = hasChanged
+                ? "Item updated and queued for sync."
+                : "Item updated. No changes detected.";
         }
 
-        await LoadItemsAsync();
-
-        _itemBeingEdited = null;
-        StatusMessage = hasChanged
-            ? "Item updated and change recorded."
-            : "Item updated. No changes detected.";
+        ClearForm();
     }
-
-    ClearForm();
-}
 
     [RelayCommand]
     private void EditItem(LostAndFoundItem item)
@@ -158,28 +166,33 @@ private async Task SaveItemAsync()
         Description = item.Description;
         Location = item.Location;
         StatusMessage = "Editing item.";
-
-        // Changes.Add(new ChangesTable
-        // {
-        //     Item_Id = item.Id,
-        //     ChangeType = "Edit",
-        //     ColumnName = "All",
-        //     OldValue = $"Title: {item.Title}, Description: {item.Description}, Location: {item.Location}",
-        //     NewValue = string.Empty,
-        //     ChangeDate = DateTime.UtcNow
-        // });
-        
     }
 
     [RelayCommand]
     private async Task DeleteItemAsync(LostAndFoundItem item)
     {
+        int deletedItemId = item.Id;
+        DateTime deletedAtUtc = DateTime.UtcNow;
+
         var result = await _database.DeleteLostAndFoundItemAsync(item);
         if (result <= 0)
         {
             StatusMessage = "Could not find item to delete.";
             return;
         }
+
+        var auditChange = new ChangesTable
+        {
+            Item_Id = deletedItemId,
+            ChangeType = "Delete",
+            ColumnName = "All",
+            OldValue = $"Title: {item.Title}, Description: {item.Description}, Location: {item.Location}",
+            NewValue = string.Empty,
+            ChangeDate = deletedAtUtc
+        };
+
+        await SaveAuditChangeAsync(auditChange);
+        await QueueSyncChangeAsync(deletedItemId, "delete", deletedAtUtc);
 
         Items.Remove(item);
         if (ReferenceEquals(_itemBeingEdited, item))
@@ -188,7 +201,44 @@ private async Task SaveItemAsync()
             ClearForm();
         }
 
-        StatusMessage = "Item deleted.";
+        StatusMessage = "Item deleted and queued for sync.";
+    }
+
+    private async Task SaveAuditChangeAsync(ChangesTable change)
+    {
+        int result = await _database.SaveChangeAsync(change);
+        if (result <= 0)
+        {
+            throw new InvalidOperationException(
+                $"Could not save the {change.ChangeType} audit record for item {change.Item_Id}.");
+        }
+
+        Changes.Add(change);
+    }
+
+    private async Task QueueSyncChangeAsync(
+        int recordId,
+        string operationType,
+        DateTime lastModifiedUtc)
+    {
+        var pendingChange = new PendingSyncChange
+        {
+            ChangeId = Guid.NewGuid().ToString(),
+            RecordId = recordId,
+            OperationType = operationType,
+            LastModified = lastModifiedUtc,
+            DeviceUserId = DeviceUserId,
+            IsSynced = false
+        };
+
+        int result = await _database.QueuePendingChangeAsync(pendingChange);
+        if (result <= 0)
+        {
+            throw new InvalidOperationException(
+                $"Could not queue the {operationType} operation for item {recordId}.");
+        }
+
+        await LoadPendingChangesAsync();
     }
 
     private void ClearForm()

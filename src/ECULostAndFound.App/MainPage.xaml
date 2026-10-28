@@ -9,8 +9,8 @@
     Title="{Binding PageTitle}">
 
     <Grid Padding="20"
-          RowDefinitions="Auto,Auto,Auto,Auto,*"
-          RowSpacing="12">
+          RowDefinitions="Auto,Auto,Auto,Auto,*,Auto,*"
+          RowSpacing="8">
 
         <Label Grid.Row="0"
                Text="{Binding PageTitle}"
@@ -68,6 +68,35 @@
                                                           Path=DeleteItemCommand}"
                                         CommandParameter="{Binding .}" />
                             </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <Label Grid.Row="5"
+               Text="Pending sync changes"
+               FontSize="20"
+               FontAttributes="Bold" />
+
+        <CollectionView Grid.Row="6"
+                        ItemsSource="{Binding PendingChanges}"
+                        EmptyView="No pending changes.">
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:PendingSyncChange">
+                    <Border Padding="10"
+                            Margin="0,4"
+                            Stroke="#CCCCCC"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 8">
+
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="{Binding OperationType, StringFormat='Operation: {0}'}"
+                                   FontAttributes="Bold" />
+                            <Label Text="{Binding RecordId, StringFormat='Record ID: {0}'}" />
+                            <Label Text="{Binding LastModified, StringFormat='Modified: {0:MMM d, yyyy h:mm tt}'}" />
+                            <Label Text="{Binding DeviceUserId, StringFormat='Device/User: {0}'}" />
                         </VerticalStackLayout>
                     </Border>
                 </DataTemplate>
