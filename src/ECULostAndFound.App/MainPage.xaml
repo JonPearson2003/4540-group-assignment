@@ -9,7 +9,7 @@
     Title="{Binding PageTitle}">
 
     <Grid Padding="20"
-          RowDefinitions="Auto,Auto,Auto,Auto,*,Auto,*"
+          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto,*"
           RowSpacing="8">
 
         <Label Grid.Row="0"
@@ -17,7 +17,9 @@
                FontSize="26"
                FontAttributes="Bold" />
 
-        <VerticalStackLayout Grid.Row="1" Spacing="8">
+        <VerticalStackLayout Grid.Row="1"
+                             Spacing="8">
+
             <Entry Placeholder="Item name"
                    Text="{Binding ItemTitle, Mode=TwoWay}" />
 
@@ -27,80 +29,138 @@
 
             <Entry Placeholder="Location"
                    Text="{Binding Location, Mode=TwoWay}" />
+
         </VerticalStackLayout>
 
         <Button Grid.Row="2"
                 Text="Save item"
                 Command="{Binding SaveItemCommand}" />
 
-        <Label Grid.Row="3"
-               Text="{Binding StatusMessage}"
-               HorizontalOptions="Center" />
+        <Button Grid.Row="3"
+                Text="Push Changes"
+                Command="{Binding PushChangesCommand}" />
 
-        <CollectionView Grid.Row="4"
+        <Button Grid.Row="4"
+                Text="Pull Changes"
+                Command="{Binding PullChangesCommand}" />
+
+        <Button Grid.Row="5"
+                Text="Process Downloaded Changes"
+                Command="{Binding ProcessChangesCommand}" />
+
+        <VerticalStackLayout Grid.Row="6"
+                             Spacing="4">
+
+            <ActivityIndicator
+                IsRunning="{Binding IsSyncing}"
+                IsVisible="{Binding IsSyncing}"
+                HorizontalOptions="Center" />
+
+            <Label Text="{Binding StatusMessage}"
+                   HorizontalOptions="Center" />
+
+        </VerticalStackLayout>
+
+        <CollectionView Grid.Row="7"
                         ItemsSource="{Binding Items}"
                         EmptyView="No items yet. Add an item above.">
 
             <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="models:LostAndFoundItem">
+
+                <DataTemplate
+                    x:DataType="models:LostAndFoundItem">
+
                     <Border Padding="12"
                             Margin="0,4"
                             Stroke="#CCCCCC"
                             StrokeThickness="1"
                             StrokeShape="RoundRectangle 8">
 
-                        <VerticalStackLayout Spacing="6">
+                        <VerticalStackLayout
+                            Spacing="6">
+
                             <Label Text="{Binding Title}"
                                    FontSize="18"
                                    FontAttributes="Bold" />
 
                             <Label Text="{Binding Description}" />
-                            <Label Text="{Binding Location, StringFormat='Location: {0}'}" />
 
-                            <HorizontalStackLayout Spacing="8">
-                                <Button Text="Edit"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}},
-                                                          Path=EditItemCommand}"
-                                        CommandParameter="{Binding .}" />
+                            <Label
+                                Text="{Binding Location, StringFormat='Location: {0}'}" />
 
-                                <Button Text="Delete"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}},
-                                                          Path=DeleteItemCommand}"
-                                        CommandParameter="{Binding .}" />
+                            <HorizontalStackLayout
+                                Spacing="8">
+
+                                <Button
+                                    Text="Edit"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}},
+                                                      Path=EditItemCommand}"
+                                    CommandParameter="{Binding .}" />
+
+                                <Button
+                                    Text="Delete"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}},
+                                                      Path=DeleteItemCommand}"
+                                    CommandParameter="{Binding .}" />
+
                             </HorizontalStackLayout>
+
                         </VerticalStackLayout>
+
                     </Border>
+
                 </DataTemplate>
+
             </CollectionView.ItemTemplate>
+
         </CollectionView>
 
-        <Label Grid.Row="5"
+        <Label Grid.Row="8"
                Text="Pending sync changes"
                FontSize="20"
                FontAttributes="Bold" />
 
-        <CollectionView Grid.Row="6"
+        <CollectionView Grid.Row="9"
                         ItemsSource="{Binding PendingChanges}"
                         EmptyView="No pending changes.">
 
             <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="models:PendingSyncChange">
+
+                <DataTemplate
+                    x:DataType="models:PendingSyncChange">
+
                     <Border Padding="10"
                             Margin="0,4"
                             Stroke="#CCCCCC"
                             StrokeThickness="1"
                             StrokeShape="RoundRectangle 8">
 
-                        <VerticalStackLayout Spacing="4">
-                            <Label Text="{Binding OperationType, StringFormat='Operation: {0}'}"
-                                   FontAttributes="Bold" />
-                            <Label Text="{Binding RecordId, StringFormat='Record ID: {0}'}" />
-                            <Label Text="{Binding LastModified, StringFormat='Modified: {0:MMM d, yyyy h:mm tt}'}" />
-                            <Label Text="{Binding DeviceUserId, StringFormat='Device/User: {0}'}" />
+                        <VerticalStackLayout
+                            Spacing="4">
+
+                            <Label
+                                Text="{Binding OperationType, StringFormat='Operation: {0}'}"
+                                FontAttributes="Bold" />
+
+                            <Label
+                                Text="{Binding RecordId, StringFormat='Record ID: {0}'}" />
+
+                            <Label
+                                Text="{Binding LastModified, StringFormat='Modified: {0:MMM d, yyyy h:mm tt}'}" />
+
+                            <Label
+                                Text="{Binding DeviceUserId, StringFormat='Device/User: {0}'}" />
+
                         </VerticalStackLayout>
+
                     </Border>
+
                 </DataTemplate>
+
             </CollectionView.ItemTemplate>
+
         </CollectionView>
+
     </Grid>
+
 </ContentPage>

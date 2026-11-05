@@ -1,15 +1,19 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using ECULostAndFound.App.Models;
 using ECULostAndFound.App.Data;
+using ECULostAndFound.App.Models;
+using ECULostAndFound.App.Services;
 
 namespace ECULostAndFound.App.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {
     private const string DeviceUserId = "Development-device-1";
+
     private readonly LostAndFoundDatabase _database;
+    private readonly SyncService _syncService;
+
     private LostAndFoundItem? _itemBeingEdited;
 
     private string _oldTitle = string.Empty;
@@ -38,26 +42,162 @@ public partial class MainViewModel : ObservableObject
     private string _location = string.Empty;
 
     [ObservableProperty]
-    private string _statusMessage = "Welcome to the ECU Lost and Found App!";
+    private string _statusMessage =
+        "Welcome to the ECU Lost and Found App!";
 
-    public MainViewModel(LostAndFoundDatabase database)
+    [ObservableProperty]
+    private bool _isSyncing;
+
+    public MainViewModel(
+        LostAndFoundDatabase database,
+        SyncService syncService)
     {
         _database = database;
+        _syncService = syncService;
     }
 
     [RelayCommand]
     private async Task LoadItemsAsync()
     {
-        var items = await _database.GetLostAndFoundItemsAsync();
-        Items = new ObservableCollection<LostAndFoundItem>(items);
+        var items =
+            await _database.GetLostAndFoundItemsAsync();
+
+        Items =
+            new ObservableCollection<LostAndFoundItem>(
+                items);
 
         await LoadPendingChangesAsync();
     }
 
     private async Task LoadPendingChangesAsync()
     {
-        var pendingChanges = await _database.GetPendingChangesAsync();
-        PendingChanges = new ObservableCollection<PendingSyncChange>(pendingChanges);
+        var pendingChanges =
+            await _database.GetPendingChangesAsync();
+
+        PendingChanges =
+            new ObservableCollection<PendingSyncChange>(
+                pendingChanges);
+    }
+
+    [RelayCommand]
+    private async Task PushChangesAsync()
+    {
+        if (IsSyncing)
+        {
+            return;
+        }
+
+        try
+        {
+            IsSyncing = true;
+
+            StatusMessage =
+                "Uploading pending changes...";
+
+            var changesPushed =
+                await _syncService.PushChangesAsync();
+
+            await LoadPendingChangesAsync();
+
+            StatusMessage =
+                $"Push complete. {changesPushed} change(s) uploaded.";
+        }
+        catch (HttpRequestException)
+        {
+            StatusMessage =
+                "Could not reach the server.";
+        }
+        catch (TaskCanceledException)
+        {
+            StatusMessage =
+                "Server request timed out.";
+        }
+        catch (Exception exception)
+        {
+            StatusMessage =
+                $"Push failed: {exception.Message}";
+        }
+        finally
+        {
+            IsSyncing = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task PullChangesAsync()
+    {
+        if (IsSyncing)
+        {
+            return;
+        }
+
+        try
+        {
+            IsSyncing = true;
+
+            StatusMessage =
+                "Downloading server changes...";
+
+            var changesReceived =
+                await _syncService.PullChangesAsync();
+
+            StatusMessage =
+                $"Pull complete. {changesReceived} change(s) downloaded.";
+        }
+        catch (HttpRequestException)
+        {
+            StatusMessage =
+                "Could not reach the server.";
+        }
+        catch (TaskCanceledException)
+        {
+            StatusMessage =
+                "Server request timed out.";
+        }
+        catch (Exception exception)
+        {
+            StatusMessage =
+                $"Pull failed: {exception.Message}";
+        }
+        finally
+        {
+            IsSyncing = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ProcessChangesAsync()
+    {
+        if (IsSyncing)
+        {
+            return;
+        }
+
+        try
+        {
+            IsSyncing = true;
+
+            StatusMessage =
+                "Processing downloaded changes...";
+
+            var processed =
+                await _syncService
+                    .ProcessDownloadedChangesAsync();
+
+            await LoadItemsAsync();
+
+            StatusMessage =
+                $"Processing complete. {processed} change(s) processed.";
+        }
+        catch (Exception exception)
+        {
+            StatusMessage =
+                $"Processing failed: {exception.Message}";
+        }
+        finally
+        {
+            IsSyncing = false;
+        }
     }
 
     [RelayCommand]
@@ -82,10 +222,15 @@ public partial class MainViewModel : ObservableObject
                 Location = newLocation
             };
 
-            var result = await _database.SaveLostAndFoundItemAsync(item);
+            var result =
+                await _database
+                    .SaveLostAndFoundItemAsync(item);
+
             if (result <= 0)
             {
-                StatusMessage = "Could not save the item.";
+                StatusMessage =
+                    "Could not save the item.";
+
                 return;
             }
 
@@ -97,18 +242,25 @@ public partial class MainViewModel : ObservableObject
                 ChangeType = "Create",
                 ColumnName = "All",
                 OldValue = string.Empty,
-                NewValue = $"Title: {item.Title}, Description: {item.Description}, Location: {item.Location}",
+                NewValue =
+                    $"Title: {item.Title}, Description: {item.Description}, Location: {item.Location}",
                 ChangeDate = item.LastUpdated
             };
 
             await SaveAuditChangeAsync(auditChange);
-            await QueueSyncChangeAsync(item.Id, "create", item.LastUpdated);
 
-            StatusMessage = "Item added and queued for sync.";
+            await QueueSyncChangeAsync(
+                item.Id,
+                "create",
+                item.LastUpdated);
+
+            StatusMessage =
+                "Item added and queued for sync.";
         }
         else
         {
             var item = _itemBeingEdited;
+
             bool hasChanged =
                 _oldTitle != newTitle ||
                 _oldDescription != newDescription ||
@@ -118,10 +270,15 @@ public partial class MainViewModel : ObservableObject
             item.Description = newDescription;
             item.Location = newLocation;
 
-            var result = await _database.SaveLostAndFoundItemAsync(item);
+            var result =
+                await _database
+                    .SaveLostAndFoundItemAsync(item);
+
             if (result <= 0)
             {
-                StatusMessage = "Could not find item to update.";
+                StatusMessage =
+                    "Could not find item to update.";
+
                 return;
             }
 
@@ -132,18 +289,26 @@ public partial class MainViewModel : ObservableObject
                     Item_Id = item.Id,
                     ChangeType = "Edit",
                     ColumnName = "All",
-                    OldValue = $"Title: {_oldTitle}, Description: {_oldDescription}, Location: {_oldLocation}",
-                    NewValue = $"Title: {newTitle}, Description: {newDescription}, Location: {newLocation}",
+                    OldValue =
+                        $"Title: {_oldTitle}, Description: {_oldDescription}, Location: {_oldLocation}",
+                    NewValue =
+                        $"Title: {newTitle}, Description: {newDescription}, Location: {newLocation}",
                     ChangeDate = item.LastUpdated
                 };
 
-                await SaveAuditChangeAsync(auditChange);
-                await QueueSyncChangeAsync(item.Id, "update", item.LastUpdated);
+                await SaveAuditChangeAsync(
+                    auditChange);
+
+                await QueueSyncChangeAsync(
+                    item.Id,
+                    "update",
+                    item.LastUpdated);
             }
 
             await LoadItemsAsync();
 
             _itemBeingEdited = null;
+
             StatusMessage = hasChanged
                 ? "Item updated and queued for sync."
                 : "Item updated. No changes detected.";
@@ -161,23 +326,31 @@ public partial class MainViewModel : ObservableObject
         _oldDescription = item.Description;
         _oldLocation = item.Location;
 
-
         ItemTitle = item.Title;
         Description = item.Description;
         Location = item.Location;
+
         StatusMessage = "Editing item.";
     }
 
     [RelayCommand]
-    private async Task DeleteItemAsync(LostAndFoundItem item)
+    private async Task DeleteItemAsync(
+        LostAndFoundItem item)
     {
         int deletedItemId = item.Id;
-        DateTime deletedAtUtc = DateTime.UtcNow;
 
-        var result = await _database.DeleteLostAndFoundItemAsync(item);
+        DateTime deletedAtUtc =
+            DateTime.UtcNow;
+
+        var result =
+            await _database
+                .DeleteLostAndFoundItemAsync(item);
+
         if (result <= 0)
         {
-            StatusMessage = "Could not find item to delete.";
+            StatusMessage =
+                "Could not find item to delete.";
+
             return;
         }
 
@@ -186,27 +359,39 @@ public partial class MainViewModel : ObservableObject
             Item_Id = deletedItemId,
             ChangeType = "Delete",
             ColumnName = "All",
-            OldValue = $"Title: {item.Title}, Description: {item.Description}, Location: {item.Location}",
+            OldValue =
+                $"Title: {item.Title}, Description: {item.Description}, Location: {item.Location}",
             NewValue = string.Empty,
             ChangeDate = deletedAtUtc
         };
 
         await SaveAuditChangeAsync(auditChange);
-        await QueueSyncChangeAsync(deletedItemId, "delete", deletedAtUtc);
+
+        await QueueSyncChangeAsync(
+            deletedItemId,
+            "delete",
+            deletedAtUtc);
 
         Items.Remove(item);
-        if (ReferenceEquals(_itemBeingEdited, item))
+
+        if (ReferenceEquals(
+            _itemBeingEdited,
+            item))
         {
             _itemBeingEdited = null;
             ClearForm();
         }
 
-        StatusMessage = "Item deleted and queued for sync.";
+        StatusMessage =
+            "Item deleted and queued for sync.";
     }
 
-    private async Task SaveAuditChangeAsync(ChangesTable change)
+    private async Task SaveAuditChangeAsync(
+        ChangesTable change)
     {
-        int result = await _database.SaveChangeAsync(change);
+        int result =
+            await _database.SaveChangeAsync(change);
+
         if (result <= 0)
         {
             throw new InvalidOperationException(
@@ -221,17 +406,31 @@ public partial class MainViewModel : ObservableObject
         string operationType,
         DateTime lastModifiedUtc)
     {
-        var pendingChange = new PendingSyncChange
-        {
-            ChangeId = Guid.NewGuid().ToString(),
-            RecordId = recordId,
-            OperationType = operationType,
-            LastModified = lastModifiedUtc,
-            DeviceUserId = DeviceUserId,
-            IsSynced = false
-        };
+        var pendingChange =
+            new PendingSyncChange
+            {
+                ChangeId =
+                    Guid.NewGuid().ToString(),
 
-        int result = await _database.QueuePendingChangeAsync(pendingChange);
+                RecordId = recordId,
+
+                OperationType =
+                    operationType,
+
+                LastModified =
+                    lastModifiedUtc,
+
+                DeviceUserId =
+                    DeviceUserId,
+
+                IsSynced = false
+            };
+
+        int result =
+            await _database
+                .QueuePendingChangeAsync(
+                    pendingChange);
+
         if (result <= 0)
         {
             throw new InvalidOperationException(
