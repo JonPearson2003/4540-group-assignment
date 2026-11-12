@@ -15,12 +15,63 @@ partial class LostAndFoundDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261105021811_InitialServerDatabase";
+    public override string LastMigrationId => "20261110022235_AddAuditEntries";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
 #pragma warning disable 612, 618
         modelBuilder.HasAnnotation("ProductVersion", "11.0.0-preview.7.26381.103");
+
+        modelBuilder.Entity("ECULostAndFound.Api.Models.AuditEntry", b =>
+            {
+                b.Property<long>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("ActorId")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("ChangeId")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("ChangeType")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<DateTime>("ChangedAtUtc")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("ColumnName")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<int>("ItemId")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("NewValue")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("OldValue")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<DateTime>("ReceivedAtUtc")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Source")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.HasKey("Id");
+
+                b.HasIndex("ChangeId")
+                    .IsUnique();
+
+                b.ToTable("AuditEntries");
+            });
 
         modelBuilder.Entity("ECULostAndFound.Api.Models.LostAndFoundItem", b =>
             {
@@ -56,6 +107,9 @@ partial class LostAndFoundDbContextModelSnapshot : ModelSnapshot
                     .IsRequired()
                     .HasColumnType("TEXT");
 
+                b.Property<long>("ServerVersion")
+                    .HasColumnType("INTEGER");
+
                 b.Property<string>("Status")
                     .IsRequired()
                     .HasColumnType("TEXT");
@@ -71,6 +125,38 @@ partial class LostAndFoundDbContextModelSnapshot : ModelSnapshot
                 b.HasKey("Id");
 
                 b.ToTable("LostAndFoundItems");
+            });
+
+        modelBuilder.Entity("ECULostAndFound.Api.Models.ProcessedChange", b =>
+            {
+                b.Property<long>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("ChangeId")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("ItemJson")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("OperationType")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<DateTime>("ProcessedAtUtc")
+                    .HasColumnType("TEXT");
+
+                b.Property<int>("RecordId")
+                    .HasColumnType("INTEGER");
+
+                b.HasKey("Id");
+
+                b.HasIndex("ChangeId")
+                    .IsUnique();
+
+                b.ToTable("ProcessedChanges");
             });
 #pragma warning restore 612, 618
     }

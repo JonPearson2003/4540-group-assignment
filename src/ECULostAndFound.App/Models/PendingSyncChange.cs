@@ -15,4 +15,5 @@ public class PendingSyncChange
     public DateTime LastModified { get; set; }
     public string DeviceUserId { get; set; } = string.Empty;
     public bool IsSynced { get; set; } 
+    public string? ItemJson { get; set; }
 }

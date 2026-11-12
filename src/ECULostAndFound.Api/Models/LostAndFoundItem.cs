@@ -26,4 +26,6 @@ public class LostAndFoundItem
 
     // Week 4: lets other devices learn that this item was deleted.
     public bool IsDeleted { get; set; }
+
+    public long ServerVersion { get; set; }
 }

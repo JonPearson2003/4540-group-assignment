@@ -66,3 +66,32 @@ ECU lost and Found lets faculty and Students upload and browse lost items that h
 - Add request server changes newer than the device's last sync time
 - Apply incoming chnages to the local database
 - Be able to handle deletes (tombstones or flags)
+
+## Week 4 Progress
+- Added Conflict Handeling
+- Added Sync Trigger and Automatic Sync when connected to internet
+- Added Retry Sync Logic
+- Added Audit Trail
+
+## Evidence of conflict strategy working
+### Steps taken
+- App is ran on two seperate devices(Device A and Device B)
+- Device B edits and item on the list while offline
+- Device A edits the same item on the list while offline
+- Device A reconnects to the internet and syncs
+- Device B reconnects to the internet and syncs
+- Device A resyncs and shows the changes Device B made
+
+![App uses last Process wins rule](./Images/screenshots/week%205/1_conflict_strat_app_only.png)
+![Sever tracks server version and app only pulls new server versions it doesnt have](./Images/screenshots/week%205/1_conflict_strat_sever_version.png)
+
+## Evidence of audit logging on device
+![Evidence of audit logging on device](./Images/screenshots/week%205/2_audit_on_app.png)
+
+## Evidence of audit logging synced to server
+![Evidence of audit logging synced to server](./Images/screenshots/week%205/3_audit_on_server.png)
+
+## Evidence of automatic sync attempt both (online and offline)
+![Attempting to sync while in airplane mode](./Images/screenshots/week%205/4_offline_sync.png)
+
+![Automatically Syncs when reconnected to the internet](./Images/screenshots/week%205/4_online_auto_sync.png)

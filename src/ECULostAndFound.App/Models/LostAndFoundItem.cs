@@ -28,4 +28,7 @@ public class LostAndFoundItem
     public bool IsClaimed { get; set; }
 
     public bool IsDeleted { get; set; }
+
+    public long ServerVersion { get; set; }
+
 }

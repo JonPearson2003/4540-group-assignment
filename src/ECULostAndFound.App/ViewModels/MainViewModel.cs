@@ -4,6 +4,8 @@ using CommunityToolkit.Mvvm.Input;
 using ECULostAndFound.App.Data;
 using ECULostAndFound.App.Models;
 using ECULostAndFound.App.Services;
+using Microsoft.Maui.Networking;
+using System.Text.Json;
 
 namespace ECULostAndFound.App.ViewModels;
 
@@ -13,6 +15,7 @@ public partial class MainViewModel : ObservableObject
 
     private readonly LostAndFoundDatabase _database;
     private readonly SyncService _syncService;
+    private readonly SemaphoreSlim _syncGate = new(1, 1);
 
     private LostAndFoundItem? _itemBeingEdited;
 
@@ -48,6 +51,15 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSyncing;
 
+    [ObservableProperty]
+    private bool _isItemsView = true;
+
+    [ObservableProperty]
+    private bool _isPendingChangesView;
+
+    [ObservableProperty]
+    private bool _isAuditView;
+
     public MainViewModel(
         LostAndFoundDatabase database,
         SyncService syncService)
@@ -67,6 +79,7 @@ public partial class MainViewModel : ObservableObject
                 items);
 
         await LoadPendingChangesAsync();
+        await LoadAuditEntriesAsync();
     }
 
     private async Task LoadPendingChangesAsync()
@@ -79,124 +92,90 @@ public partial class MainViewModel : ObservableObject
                 pendingChanges);
     }
 
-    [RelayCommand]
-    private async Task PushChangesAsync()
+    private async Task LoadAuditEntriesAsync()
     {
-        if (IsSyncing)
+        var changes = await _database.GetChangesAsync();
+
+        Changes = new ObservableCollection<ChangesTable>(changes);
+    }
+
+    [RelayCommand]
+    private void ShowItems() => SetListView(isItems: true);
+
+    [RelayCommand]
+    private void ShowPendingChanges() => SetListView(isPendingChanges: true);
+
+    [RelayCommand]
+    private void ShowAuditTrail() => SetListView(isAudit: true);
+
+    private void SetListView(
+        bool isItems = false,
+        bool isPendingChanges = false,
+        bool isAudit = false)
+    {
+        IsItemsView = isItems;
+        IsPendingChangesView = isPendingChanges;
+        IsAuditView = isAudit;
+    }
+
+    [RelayCommand]
+    private Task SyncNowAsync() => RunSyncAsync(isAutomatic: false);
+
+    public Task SyncAutomaticallyAsync() =>
+        RunSyncAsync(isAutomatic: true);
+
+    private async Task RunSyncAsync(bool isAutomatic)
+    {
+        if (!await _syncGate.WaitAsync(0))
         {
             return;
         }
 
         try
         {
+            if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
+            {
+                StatusMessage = isAutomatic
+                    ? "Automatic sync is waiting for an internet connection. Changes remain queued."
+                    : "You're offline. Pending changes remain queued until you sync online.";
+                return;
+            }
+
             IsSyncing = true;
+            StatusMessage = isAutomatic
+                ? "Connection detected. Syncing..."
+                : "Syncing with server...";
 
-            StatusMessage =
-                "Uploading pending changes...";
-
-            var changesPushed =
+            var pushResult =
                 await _syncService.PushChangesAsync();
 
-            await LoadPendingChangesAsync();
-
-            StatusMessage =
-                $"Push complete. {changesPushed} change(s) uploaded.";
-        }
-        catch (HttpRequestException)
-        {
-            StatusMessage =
-                "Could not reach the server.";
-        }
-        catch (TaskCanceledException)
-        {
-            StatusMessage =
-                "Server request timed out.";
-        }
-        catch (Exception exception)
-        {
-            StatusMessage =
-                $"Push failed: {exception.Message}";
-        }
-        finally
-        {
-            IsSyncing = false;
-        }
-    }
-
-    [RelayCommand]
-    private async Task PullChangesAsync()
-    {
-        if (IsSyncing)
-        {
-            return;
-        }
-
-        try
-        {
-            IsSyncing = true;
-
-            StatusMessage =
-                "Downloading server changes...";
-
-            var changesReceived =
+            var pulled =
                 await _syncService.PullChangesAsync();
-
-            StatusMessage =
-                $"Pull complete. {changesReceived} change(s) downloaded.";
-        }
-        catch (HttpRequestException)
-        {
-            StatusMessage =
-                "Could not reach the server.";
-        }
-        catch (TaskCanceledException)
-        {
-            StatusMessage =
-                "Server request timed out.";
-        }
-        catch (Exception exception)
-        {
-            StatusMessage =
-                $"Pull failed: {exception.Message}";
-        }
-        finally
-        {
-            IsSyncing = false;
-        }
-    }
-
-    [RelayCommand]
-    private async Task ProcessChangesAsync()
-    {
-        if (IsSyncing)
-        {
-            return;
-        }
-
-        try
-        {
-            IsSyncing = true;
-
-            StatusMessage =
-                "Processing downloaded changes...";
-
-            var processed =
-                await _syncService
-                    .ProcessDownloadedChangesAsync();
 
             await LoadItemsAsync();
 
             StatusMessage =
-                $"Processing complete. {processed} change(s) processed.";
+                $"Sync complete. Uploaded {pushResult.ItemChanges} item change(s) and {pushResult.AuditEntries} audit entry(ies); applied {pulled} server change(s).";
+        }
+        catch (HttpRequestException)
+        {
+            StatusMessage =
+                "Could not reach the server. Changes that were not uploaded remain queued.";
+        }
+        catch (TaskCanceledException)
+        {
+            StatusMessage =
+                "Sync timed out. Changes that were not uploaded remain queued.";
         }
         catch (Exception exception)
         {
             StatusMessage =
-                $"Processing failed: {exception.Message}";
+                $"Sync failed: {exception.Message}";
         }
         finally
         {
             IsSyncing = false;
+            _syncGate.Release();
         }
     }
 
@@ -250,7 +229,7 @@ public partial class MainViewModel : ObservableObject
             await SaveAuditChangeAsync(auditChange);
 
             await QueueSyncChangeAsync(
-                item.Id,
+                item,
                 "create",
                 item.LastUpdated);
 
@@ -300,7 +279,7 @@ public partial class MainViewModel : ObservableObject
                     auditChange);
 
                 await QueueSyncChangeAsync(
-                    item.Id,
+                    item,
                     "update",
                     item.LastUpdated);
             }
@@ -339,9 +318,6 @@ public partial class MainViewModel : ObservableObject
     {
         int deletedItemId = item.Id;
 
-        DateTime deletedAtUtc =
-            DateTime.UtcNow;
-
         var result =
             await _database
                 .DeleteLostAndFoundItemAsync(item);
@@ -353,6 +329,8 @@ public partial class MainViewModel : ObservableObject
 
             return;
         }
+
+        DateTime deletedAtUtc = item.LastUpdated;
 
         var auditChange = new ChangesTable
         {
@@ -368,7 +346,7 @@ public partial class MainViewModel : ObservableObject
         await SaveAuditChangeAsync(auditChange);
 
         await QueueSyncChangeAsync(
-            deletedItemId,
+            item,
             "delete",
             deletedAtUtc);
 
@@ -389,6 +367,9 @@ public partial class MainViewModel : ObservableObject
     private async Task SaveAuditChangeAsync(
         ChangesTable change)
     {
+        change.ActorId = DeviceUserId;
+        change.Source = "Mobile app";
+
         int result =
             await _database.SaveChangeAsync(change);
 
@@ -398,43 +379,34 @@ public partial class MainViewModel : ObservableObject
                 $"Could not save the {change.ChangeType} audit record for item {change.Item_Id}.");
         }
 
-        Changes.Add(change);
+        await LoadAuditEntriesAsync();
     }
 
     private async Task QueueSyncChangeAsync(
-        int recordId,
+        LostAndFoundItem item,
         string operationType,
         DateTime lastModifiedUtc)
     {
-        var pendingChange =
-            new PendingSyncChange
-            {
-                ChangeId =
-                    Guid.NewGuid().ToString(),
+        var pendingChange = new PendingSyncChange
+        {
+            ChangeId = Guid.NewGuid().ToString(),
+            RecordId = item.Id,
+            OperationType = operationType,
+            LastModified = lastModifiedUtc,
+            DeviceUserId = DeviceUserId,
+            ItemJson = operationType.Equals(
+                "delete",
+                StringComparison.OrdinalIgnoreCase)
+                    ? null
+                    : JsonSerializer.Serialize(item)
+        };
 
-                RecordId = recordId,
-
-                OperationType =
-                    operationType,
-
-                LastModified =
-                    lastModifiedUtc,
-
-                DeviceUserId =
-                    DeviceUserId,
-
-                IsSynced = false
-            };
-
-        int result =
-            await _database
-                .QueuePendingChangeAsync(
-                    pendingChange);
+        int result = await _database.QueuePendingChangeAsync(pendingChange);
 
         if (result <= 0)
         {
             throw new InvalidOperationException(
-                $"Could not queue the {operationType} operation for item {recordId}.");
+                $"Could not queue the {operationType} operation for item {item.Id}.");
         }
 
         await LoadPendingChangesAsync();
