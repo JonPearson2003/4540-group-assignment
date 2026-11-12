@@ -107,3 +107,10 @@ ECU lost and Found lets faculty and Students upload and browse lost items that h
 <p>
 <img src="./Images/screenshots/week%205/4_online_auto_sync.png" alt="Automatically Syncs when reconnected to the internet" width="50%">
 </p>
+
+### Video Demo of automatic sync
+
+
+https://github.com/user-attachments/assets/31a4b6ef-e9a5-40f4-860f-dc8408756a56
+
+
