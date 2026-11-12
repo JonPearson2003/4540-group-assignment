@@ -82,16 +82,28 @@ ECU lost and Found lets faculty and Students upload and browse lost items that h
 - Device B reconnects to the internet and syncs
 - Device A resyncs and shows the changes Device B made
 
-![App uses last Process wins rule](./Images/screenshots/week%205/1_conflict_strat_app_only.png)
-![Sever tracks server version and app only pulls new server versions it doesnt have](./Images/screenshots/week%205/1_conflict_strat_sever_version.png)
+- App uses last Process wins rule
+<p>
+<img src="./Images/screenshots/week%205/1_conflict_strat_app_only.png" alt="Automatically Syncs when reconnected to the internet" width="50%">
+</p>
+- Sever tracks server version and app only pulls new server versions it doesnt have
+
+<img src="./Images/screenshots/week%205/1_conflict_strat_sever_version.png" alt="Automatically Syncs when reconnected to the internet">
 
 ## Evidence of audit logging on device
-![Evidence of audit logging on device](./Images/screenshots/week%205/2_audit_on_app.png)
+<p>
+<img src="./Images/screenshots/week%205/2_audit_on_app.png" alt="Automatically Syncs when reconnected to the internet" width="50%">
+</p>
 
 ## Evidence of audit logging synced to server
-![Evidence of audit logging synced to server](./Images/screenshots/week%205/3_audit_on_server.png)
+<img src="./Images/screenshots/week%205/3_audit_on_server.png" alt="Automatically Syncs when reconnected to the internet">
 
 ## Evidence of automatic sync attempt both (online and offline)
-![Attempting to sync while in airplane mode](./Images/screenshots/week%205/4_offline_sync.png)
-
-![Automatically Syncs when reconnected to the internet](./Images/screenshots/week%205/4_online_auto_sync.png)
+- Attempting to sync while in airplane mode
+<p>
+<img src="./Images/screenshots/week%205/4_offline_sync.png" alt="Automatically Syncs when reconnected to the internet" width="50%">
+</p>
+- Automatically Syncs when reconnected to the internet
+<p>
+<img src="./Images/screenshots/week%205/4_online_auto_sync.png" alt="Automatically Syncs when reconnected to the internet" width="50%">
+</p>
