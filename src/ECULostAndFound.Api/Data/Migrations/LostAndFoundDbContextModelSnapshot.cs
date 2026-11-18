@@ -15,7 +15,7 @@ partial class LostAndFoundDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261110022235_AddAuditEntries";
+    public override string LastMigrationId => "20261117193053_AddReportDetails";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -83,6 +83,17 @@ partial class LostAndFoundDbContextModelSnapshot : ModelSnapshot
                     .IsRequired()
                     .HasColumnType("TEXT");
 
+                b.Property<string>("CollectionDetails")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("CollectionLocation")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<DateTime>("DateFound")
+                    .HasColumnType("TEXT");
+
                 b.Property<DateTime>("DateReported")
                     .HasColumnType("TEXT");
 
@@ -100,6 +111,10 @@ partial class LostAndFoundDbContextModelSnapshot : ModelSnapshot
                     .HasColumnType("TEXT");
 
                 b.Property<string>("Location")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("PhotoData")
                     .IsRequired()
                     .HasColumnType("TEXT");
 

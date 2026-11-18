@@ -37,6 +37,24 @@ public sealed class LostAndFoundDatabase
             "ServerVersion",
             "INTEGER NOT NULL DEFAULT 0");
         await EnsureColumnExistsAsync(
+            "LostAndFoundItem",
+            "DateFound",
+            "INTEGER NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync(
+            "LostAndFoundItem",
+            "CollectionLocation",
+            "TEXT NOT NULL DEFAULT ''");
+        await EnsureColumnExistsAsync(
+            "LostAndFoundItem",
+            "CollectionDetails",
+            "TEXT NOT NULL DEFAULT ''");
+        await EnsureColumnExistsAsync(
+            "LostAndFoundItem",
+            "PhotoData",
+            "TEXT NOT NULL DEFAULT ''");
+        await database.ExecuteAsync(
+            "UPDATE LostAndFoundItem SET DateFound = DateReported WHERE DateFound = 0");
+        await EnsureColumnExistsAsync(
             "PendingSyncChange",
             "ItemJson",
             "TEXT NULL");
@@ -44,6 +62,24 @@ public sealed class LostAndFoundDatabase
             "DownloadedChange",
             "ServerVersion",
             "INTEGER NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync(
+            "DownloadedChange",
+            "DateFound",
+            "INTEGER NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync(
+            "DownloadedChange",
+            "CollectionLocation",
+            "TEXT NOT NULL DEFAULT ''");
+        await EnsureColumnExistsAsync(
+            "DownloadedChange",
+            "CollectionDetails",
+            "TEXT NOT NULL DEFAULT ''");
+        await EnsureColumnExistsAsync(
+            "DownloadedChange",
+            "PhotoData",
+            "TEXT NOT NULL DEFAULT ''");
+        await database.ExecuteAsync(
+            "UPDATE DownloadedChange SET DateFound = DateReported WHERE DateFound = 0");
         await EnsureColumnExistsAsync(
             "ChangesTable",
             "ChangeId",
@@ -301,6 +337,10 @@ public sealed class LostAndFoundDatabase
         localItem.Description = serverItem.Description;
         localItem.Category = serverItem.Category;
         localItem.Location = serverItem.Location;
+        localItem.DateFound = serverItem.DateFound;
+        localItem.CollectionLocation = serverItem.CollectionLocation;
+        localItem.CollectionDetails = serverItem.CollectionDetails;
+        localItem.PhotoData = serverItem.PhotoData;
         localItem.ReportType = serverItem.ReportType;
         localItem.Status = serverItem.Status;
         localItem.DateReported = serverItem.DateReported;
@@ -360,6 +400,10 @@ public sealed class LostAndFoundDatabase
                 Description = item.Description,
                 Category = item.Category,
                 Location = item.Location,
+                DateFound = item.DateFound,
+                CollectionLocation = item.CollectionLocation,
+                CollectionDetails = item.CollectionDetails,
+                PhotoData = item.PhotoData,
                 ReportType = item.ReportType,
                 Status = item.Status,
                 DateReported = item.DateReported,
@@ -402,6 +446,10 @@ public sealed class LostAndFoundDatabase
                 Description = change.Description,
                 Category = change.Category,
                 Location = change.Location,
+                DateFound = change.DateFound,
+                CollectionLocation = change.CollectionLocation,
+                CollectionDetails = change.CollectionDetails,
+                PhotoData = change.PhotoData,
                 ReportType = change.ReportType,
                 Status = change.Status,
                 DateReported = change.DateReported,

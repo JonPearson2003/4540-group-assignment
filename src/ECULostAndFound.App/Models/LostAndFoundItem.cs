@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+using Microsoft.Maui.Controls;
 using SQLite;
 
 namespace ECULostAndFound.App.Models;
@@ -15,6 +17,14 @@ public class LostAndFoundItem
 
     public string Location { get; set; } = string.Empty;
 
+    public DateTime DateFound { get; set; } = DateTime.Today;
+
+    public string CollectionLocation { get; set; } = string.Empty;
+
+    public string CollectionDetails { get; set; } = string.Empty;
+
+    public string PhotoData { get; set; } = string.Empty;
+
     public string ReportType { get; set; } = string.Empty;
 
     public string Status { get; set; } = "Open";
@@ -31,4 +41,21 @@ public class LostAndFoundItem
 
     public long ServerVersion { get; set; }
 
+    [Ignore, JsonIgnore]
+    public bool HasPhoto => !string.IsNullOrWhiteSpace(PhotoData);
+
+    [Ignore, JsonIgnore]
+    public bool HasCollectionLocation =>
+        !string.IsNullOrWhiteSpace(CollectionLocation);
+
+    [Ignore, JsonIgnore]
+    public bool HasCollectionDetails =>
+        !string.IsNullOrWhiteSpace(CollectionDetails);
+
+    [Ignore, JsonIgnore]
+    public ImageSource? PhotoImageSource =>
+        HasPhoto
+            ? ImageSource.FromStream(
+                () => new MemoryStream(Convert.FromBase64String(PhotoData)))
+            : null;
 }

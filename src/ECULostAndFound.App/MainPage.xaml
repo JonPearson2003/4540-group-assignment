@@ -8,53 +8,171 @@
     x:DataType="vm:MainViewModel"
     Title="{Binding PageTitle}">
 
-    <Grid Padding="16"
-          RowDefinitions="Auto,Auto,Auto,Auto,*,Auto"
-          RowSpacing="8">
+    <Grid Padding="16,14"
+          RowDefinitions="Auto,Auto,Auto,*,Auto"
+          RowSpacing="10"
+          BackgroundColor="#FAF8FC">
 
-        <Label Grid.Row="0"
-               Text="{Binding PageTitle}"
-               FontSize="26"
-               FontAttributes="Bold" />
+        <Border Grid.Row="0"
+                Padding="16,12"
+                BackgroundColor="{StaticResource Primary}"
+                Stroke="{StaticResource Primary}"
+                StrokeShape="RoundRectangle 18">
+            <VerticalStackLayout Spacing="4">
+                <Label Text="ECU LOST &amp; FOUND"
+                       FontSize="11"
+                       FontAttributes="Bold"
+                       TextColor="#E9DDF2" />
+                <Label Text="{Binding PageTitle}"
+                       FontSize="22"
+                       FontAttributes="Bold"
+                       TextColor="White" />
+                <Label Text="Report found items and manage local changes."
+                       FontSize="13"
+                       TextColor="White" />
+            </VerticalStackLayout>
+        </Border>
 
-        <VerticalStackLayout Grid.Row="1"
-                             Spacing="6">
+        <Border Grid.Row="1"
+                MaximumHeightRequest="430"
+                Padding="14"
+                BackgroundColor="White"
+                Stroke="#E8E1ED"
+                StrokeShape="RoundRectangle 16">
+            <ScrollView>
+                <VerticalStackLayout Spacing="9">
+                    <Label Text="Report a found item"
+                           FontSize="17"
+                           FontAttributes="Bold"
+                           TextColor="#271D2E" />
 
-            <Entry Placeholder="Item name"
-                   Text="{Binding ItemTitle, Mode=TwoWay}" />
+                    <Image Source="{Binding PhotoPreview}"
+                           IsVisible="{Binding HasPhoto}"
+                           HeightRequest="120"
+                           Aspect="AspectFill" />
 
-            <Editor Placeholder="Description"
-                    AutoSize="TextChanges"
-                    Text="{Binding Description, Mode=TwoWay}" />
+                    <Grid ColumnDefinitions="*,*"
+                          ColumnSpacing="8">
+                        <Button Grid.Column="0"
+                                Text="{Binding PhotoActionText}"
+                                Command="{Binding PickPhotoCommand}"
+                                BackgroundColor="{StaticResource Secondary}"
+                                TextColor="{StaticResource Primary}" />
+                        <Button Grid.Column="1"
+                                Text="Remove photo"
+                                Command="{Binding RemovePhotoCommand}"
+                                IsVisible="{Binding HasPhoto}"
+                                BackgroundColor="{StaticResource Secondary}"
+                                TextColor="{StaticResource Primary}" />
+                    </Grid>
 
-            <Entry Placeholder="Location"
-                   Text="{Binding Location, Mode=TwoWay}" />
+                    <Entry Placeholder="Item name"
+                           Text="{Binding ItemTitle, Mode=TwoWay}"
+                           ReturnType="Next" />
 
-        </VerticalStackLayout>
+                    <Editor Placeholder="Description"
+                            AutoSize="TextChanges"
+                            MinimumHeightRequest="56"
+                            Text="{Binding Description, Mode=TwoWay}" />
 
-        <Button Grid.Row="2"
-                Text="Save item"
-                Command="{Binding SaveItemCommand}" />
+                    <Entry Placeholder="Category"
+                           Text="{Binding ItemCategory, Mode=TwoWay}"
+                           ReturnType="Next" />
 
-        <Grid Grid.Row="3"
+                    <Label Text="Date found"
+                           FontAttributes="Bold"
+                           TextColor="#271D2E" />
+                    <DatePicker Date="{Binding DateFound, Mode=TwoWay}"
+                                Format="MMM d, yyyy" />
+
+                    <Entry Placeholder="Where did you find it?"
+                           Text="{Binding Location, Mode=TwoWay}"
+                           ReturnType="Next" />
+
+                    <Entry Placeholder="Where can the owner collect it? (building/location)"
+                           Text="{Binding CollectionLocation, Mode=TwoWay}"
+                           ReturnType="Next" />
+
+                    <Entry Placeholder="Desk or office details"
+                           Text="{Binding CollectionDetails, Mode=TwoWay}"
+                           ReturnType="Done" />
+
+                    <Label Text="Avoid sharing personal or identifying details. Verify ownership before returning an item."
+                           FontSize="12"
+                           TextColor="#635A68" />
+
+                    <Button Text="{Binding ItemActionButtonText}"
+                            Command="{Binding SaveItemCommand}"
+                            BackgroundColor="{StaticResource Primary}"
+                            TextColor="White"
+                            CornerRadius="12"
+                            HeightRequest="48"
+                            FontAttributes="Bold" />
+                </VerticalStackLayout>
+            </ScrollView>
+        </Border>
+
+        <Grid Grid.Row="2"
               ColumnDefinitions="*,*,*"
-              ColumnSpacing="6">
+              ColumnSpacing="8">
 
             <Button Grid.Column="0"
                     Text="Items"
-                    Command="{Binding ShowItemsCommand}" />
+                    Command="{Binding ShowItemsCommand}"
+                    BackgroundColor="{StaticResource Secondary}"
+                    TextColor="{StaticResource Primary}"
+                    CornerRadius="12"
+                    Padding="4,8"
+                    FontSize="12">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button"
+                                 Binding="{Binding IsItemsView}"
+                                 Value="True">
+                        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                        <Setter Property="TextColor" Value="White" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
 
             <Button Grid.Column="1"
                     Text="Pending"
-                    Command="{Binding ShowPendingChangesCommand}" />
+                    Command="{Binding ShowPendingChangesCommand}"
+                    BackgroundColor="{StaticResource Secondary}"
+                    TextColor="{StaticResource Primary}"
+                    CornerRadius="12"
+                    Padding="4,8"
+                    FontSize="12">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button"
+                                 Binding="{Binding IsPendingChangesView}"
+                                 Value="True">
+                        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                        <Setter Property="TextColor" Value="White" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
 
             <Button Grid.Column="2"
                     Text="Audit"
-                    Command="{Binding ShowAuditTrailCommand}" />
+                    Command="{Binding ShowAuditTrailCommand}"
+                    BackgroundColor="{StaticResource Secondary}"
+                    TextColor="{StaticResource Primary}"
+                    CornerRadius="12"
+                    Padding="4,8"
+                    FontSize="12">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button"
+                                 Binding="{Binding IsAuditView}"
+                                 Value="True">
+                        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                        <Setter Property="TextColor" Value="White" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
 
         </Grid>
 
-        <Grid Grid.Row="4">
+        <Grid Grid.Row="3">
 
             <CollectionView ItemsSource="{Binding Items}"
                             IsVisible="{Binding IsItemsView}"
@@ -64,24 +182,39 @@
                     <DataTemplate x:DataType="models:LostAndFoundItem">
                         <Border Padding="12"
                                 Margin="0,4"
-                                Stroke="#CCCCCC"
+                                BackgroundColor="White"
+                                Stroke="#E8E1ED"
                                 StrokeThickness="1"
-                                StrokeShape="RoundRectangle 8">
+                                StrokeShape="RoundRectangle 14">
 
                             <VerticalStackLayout Spacing="6">
+                                <Image Source="{Binding PhotoImageSource}"
+                                       IsVisible="{Binding HasPhoto}"
+                                       HeightRequest="140"
+                                       Aspect="AspectFill" />
                                 <Label Text="{Binding Title}"
                                        FontSize="18"
                                        FontAttributes="Bold" />
                                 <Label Text="{Binding Description}" />
-                                <Label Text="{Binding Location, StringFormat='Location: {0}'}" />
+                                <Label Text="{Binding Category, StringFormat='Category: {0}'}" />
+                                <Label Text="{Binding DateFound, StringFormat='Date found: {0:MMM d, yyyy}'}" />
+                                <Label Text="{Binding Location, StringFormat='Where found: {0}'}" />
+                                <Label Text="{Binding CollectionLocation, StringFormat='Collection location: {0}'}"
+                                       IsVisible="{Binding HasCollectionLocation}" />
+                                <Label Text="{Binding CollectionDetails, StringFormat='Desk/office: {0}'}"
+                                       IsVisible="{Binding HasCollectionDetails}" />
 
                                 <HorizontalStackLayout Spacing="8">
                                     <Button Text="Edit"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=EditItemCommand}"
-                                            CommandParameter="{Binding .}" />
+                                            CommandParameter="{Binding .}"
+                                            BackgroundColor="{StaticResource Primary}"
+                                            TextColor="White" />
                                     <Button Text="Delete"
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=DeleteItemCommand}"
-                                            CommandParameter="{Binding .}" />
+                                            CommandParameter="{Binding .}"
+                                            BackgroundColor="{StaticResource Secondary}"
+                                            TextColor="{StaticResource Primary}" />
                                 </HorizontalStackLayout>
                             </VerticalStackLayout>
 
@@ -99,9 +232,10 @@
                     <DataTemplate x:DataType="models:PendingSyncChange">
                         <Border Padding="10"
                                 Margin="0,4"
-                                Stroke="#CCCCCC"
+                                BackgroundColor="White"
+                                Stroke="#E8E1ED"
                                 StrokeThickness="1"
-                                StrokeShape="RoundRectangle 8">
+                                StrokeShape="RoundRectangle 14">
 
                             <VerticalStackLayout Spacing="4">
                                 <Label Text="{Binding OperationType, StringFormat='Operation: {0}'}"
@@ -125,9 +259,10 @@
                     <DataTemplate x:DataType="models:ChangesTable">
                         <Border Padding="10"
                                 Margin="0,4"
-                                Stroke="#CCCCCC"
+                                BackgroundColor="White"
+                                Stroke="#E8E1ED"
                                 StrokeThickness="1"
-                                StrokeShape="RoundRectangle 8">
+                                StrokeShape="RoundRectangle 14">
 
                             <VerticalStackLayout Spacing="4">
                                 <Label Text="{Binding ChangeType}"
@@ -149,7 +284,7 @@
 
         </Grid>
 
-        <VerticalStackLayout Grid.Row="5"
+        <VerticalStackLayout Grid.Row="4"
                              Spacing="4">
 
             <HorizontalStackLayout Spacing="8"
@@ -161,7 +296,11 @@
             </HorizontalStackLayout>
 
             <Button Text="Sync Now"
-                    Command="{Binding SyncNowCommand}" />
+                    Command="{Binding SyncNowCommand}"
+                    BackgroundColor="{StaticResource Secondary}"
+                    TextColor="{StaticResource Primary}"
+                    CornerRadius="12"
+                    HeightRequest="44" />
 
         </VerticalStackLayout>
 
