@@ -12,6 +12,14 @@ public class LostAndFoundItem
 
     public string Location { get; set; } = string.Empty;
 
+    public DateTime DateFound { get; set; } = DateTime.UtcNow;
+
+    public string CollectionLocation { get; set; } = string.Empty;
+
+    public string CollectionDetails { get; set; } = string.Empty;
+
+    public string PhotoData { get; set; } = string.Empty;
+
     public string ReportType { get; set; } = string.Empty;
 
     public string Status { get; set; } = "Open";

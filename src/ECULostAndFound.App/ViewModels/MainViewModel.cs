@@ -4,6 +4,8 @@ using CommunityToolkit.Mvvm.Input;
 using ECULostAndFound.App.Data;
 using ECULostAndFound.App.Models;
 using ECULostAndFound.App.Services;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Media;
 using Microsoft.Maui.Networking;
 using System.Text.Json;
 
@@ -21,7 +23,12 @@ public partial class MainViewModel : ObservableObject
 
     private string _oldTitle = string.Empty;
     private string _oldDescription = string.Empty;
+    private string _oldCategory = string.Empty;
     private string _oldLocation = string.Empty;
+    private DateTime _oldDateFound;
+    private string _oldCollectionLocation = string.Empty;
+    private string _oldCollectionDetails = string.Empty;
+    private string _oldPhotoData = string.Empty;
 
     [ObservableProperty]
     private string _pageTitle = "ECU Lost and Found";
@@ -42,7 +49,25 @@ public partial class MainViewModel : ObservableObject
     private string _description = string.Empty;
 
     [ObservableProperty]
+    private string _itemCategory = string.Empty;
+
+    [ObservableProperty]
     private string _location = string.Empty;
+
+    [ObservableProperty]
+    private DateTime _dateFound = DateTime.Today;
+
+    [ObservableProperty]
+    private string _collectionLocation = string.Empty;
+
+    [ObservableProperty]
+    private string _collectionDetails = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPhoto))]
+    [NotifyPropertyChangedFor(nameof(PhotoActionText))]
+    [NotifyPropertyChangedFor(nameof(PhotoPreview))]
+    private string _photoData = string.Empty;
 
     [ObservableProperty]
     private string _statusMessage =
@@ -59,6 +84,24 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isAuditView;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ItemActionButtonText))]
+    private bool _isEditingItem;
+
+    public string ItemActionButtonText =>
+        IsEditingItem ? "Save changes" : "Publish found item";
+
+    public bool HasPhoto => !string.IsNullOrWhiteSpace(PhotoData);
+
+    public string PhotoActionText =>
+        HasPhoto ? "Replace photo" : "Add photo";
+
+    public ImageSource? PhotoPreview =>
+        HasPhoto
+            ? ImageSource.FromStream(
+                () => new MemoryStream(Convert.FromBase64String(PhotoData)))
+            : null;
 
     public MainViewModel(
         LostAndFoundDatabase database,
@@ -191,50 +234,15 @@ public partial class MainViewModel : ObservableObject
         string newTitle = ItemTitle.Trim();
         string newDescription = Description.Trim();
         string newLocation = Location.Trim();
+        string newCollectionLocation = CollectionLocation.Trim();
+        string newCollectionDetails = CollectionDetails.Trim();
 
         if (_itemBeingEdited is null)
         {
-            var item = new LostAndFoundItem
+            if (!await CreateItemAsync("Found"))
             {
-                Title = newTitle,
-                Description = newDescription,
-                Location = newLocation
-            };
-
-            var result =
-                await _database
-                    .SaveLostAndFoundItemAsync(item);
-
-            if (result <= 0)
-            {
-                StatusMessage =
-                    "Could not save the item.";
-
                 return;
             }
-
-            Items.Add(item);
-
-            var auditChange = new ChangesTable
-            {
-                Item_Id = item.Id,
-                ChangeType = "Create",
-                ColumnName = "All",
-                OldValue = string.Empty,
-                NewValue =
-                    $"Title: {item.Title}, Description: {item.Description}, Location: {item.Location}",
-                ChangeDate = item.LastUpdated
-            };
-
-            await SaveAuditChangeAsync(auditChange);
-
-            await QueueSyncChangeAsync(
-                item,
-                "create",
-                item.LastUpdated);
-
-            StatusMessage =
-                "Item added and queued for sync.";
         }
         else
         {
@@ -243,11 +251,21 @@ public partial class MainViewModel : ObservableObject
             bool hasChanged =
                 _oldTitle != newTitle ||
                 _oldDescription != newDescription ||
-                _oldLocation != newLocation;
+                _oldCategory != ItemCategory.Trim() ||
+                _oldLocation != newLocation ||
+                _oldDateFound != DateFound.Date ||
+                _oldCollectionLocation != newCollectionLocation ||
+                _oldCollectionDetails != newCollectionDetails ||
+                _oldPhotoData != PhotoData;
 
             item.Title = newTitle;
             item.Description = newDescription;
+            item.Category = ItemCategory.Trim();
             item.Location = newLocation;
+            item.DateFound = DateFound.Date;
+            item.CollectionLocation = newCollectionLocation;
+            item.CollectionDetails = newCollectionDetails;
+            item.PhotoData = PhotoData;
 
             var result =
                 await _database
@@ -268,10 +286,24 @@ public partial class MainViewModel : ObservableObject
                     Item_Id = item.Id,
                     ChangeType = "Edit",
                     ColumnName = "All",
-                    OldValue =
-                        $"Title: {_oldTitle}, Description: {_oldDescription}, Location: {_oldLocation}",
-                    NewValue =
-                        $"Title: {newTitle}, Description: {newDescription}, Location: {newLocation}",
+                    OldValue = BuildAuditSummary(
+                        _oldTitle,
+                        _oldDescription,
+                        _oldCategory,
+                        _oldLocation,
+                        _oldDateFound,
+                        _oldCollectionLocation,
+                        _oldCollectionDetails,
+                        !string.IsNullOrWhiteSpace(_oldPhotoData)),
+                    NewValue = BuildAuditSummary(
+                        newTitle,
+                        newDescription,
+                        item.Category,
+                        newLocation,
+                        item.DateFound,
+                        item.CollectionLocation,
+                        item.CollectionDetails,
+                        item.HasPhoto),
                     ChangeDate = item.LastUpdated
                 };
 
@@ -287,6 +319,7 @@ public partial class MainViewModel : ObservableObject
             await LoadItemsAsync();
 
             _itemBeingEdited = null;
+            IsEditingItem = false;
 
             StatusMessage = hasChanged
                 ? "Item updated and queued for sync."
@@ -296,20 +329,143 @@ public partial class MainViewModel : ObservableObject
         ClearForm();
     }
 
+    private async Task<bool> CreateItemAsync(string reportType)
+    {
+        var item = new LostAndFoundItem
+        {
+            Title = ItemTitle.Trim(),
+            Description = Description.Trim(),
+            Category = ItemCategory.Trim(),
+            Location = Location.Trim(),
+            DateFound = DateFound.Date,
+            CollectionLocation = CollectionLocation.Trim(),
+            CollectionDetails = CollectionDetails.Trim(),
+            PhotoData = PhotoData,
+            ReportType = reportType
+        };
+
+        var result =
+            await _database.SaveLostAndFoundItemAsync(item);
+
+        if (result <= 0)
+        {
+            StatusMessage = "Could not save the item.";
+            return false;
+        }
+
+        Items.Add(item);
+
+        var auditChange = new ChangesTable
+        {
+            Item_Id = item.Id,
+            ChangeType = "Create",
+            ColumnName = "All",
+            OldValue = string.Empty,
+            NewValue = BuildAuditSummary(
+                item.Title,
+                item.Description,
+                item.Category,
+                item.Location,
+                item.DateFound,
+                item.CollectionLocation,
+                item.CollectionDetails,
+                item.HasPhoto),
+            ChangeDate = item.LastUpdated
+        };
+
+        await SaveAuditChangeAsync(auditChange);
+        await QueueSyncChangeAsync(
+            item,
+            "create",
+            item.LastUpdated);
+
+        StatusMessage = "Item added and queued for sync.";
+        return true;
+    }
+
     [RelayCommand]
     private void EditItem(LostAndFoundItem item)
     {
         _itemBeingEdited = item;
+        IsEditingItem = true;
 
         _oldTitle = item.Title;
         _oldDescription = item.Description;
+        _oldCategory = item.Category;
         _oldLocation = item.Location;
+        _oldDateFound = item.DateFound.Date;
+        _oldCollectionLocation = item.CollectionLocation;
+        _oldCollectionDetails = item.CollectionDetails;
+        _oldPhotoData = item.PhotoData;
 
         ItemTitle = item.Title;
         Description = item.Description;
+        ItemCategory = item.Category;
         Location = item.Location;
+        DateFound = item.DateFound.Date;
+        CollectionLocation = item.CollectionLocation;
+        CollectionDetails = item.CollectionDetails;
+        PhotoData = item.PhotoData;
 
         StatusMessage = "Editing item.";
+    }
+
+    [RelayCommand]
+    private async Task PickPhotoAsync()
+    {
+        try
+        {
+            var photos = await MediaPicker.Default.PickPhotosAsync(
+                new MediaPickerOptions
+                {
+                    Title = "Choose item photo",
+                    SelectionLimit = 1
+                });
+
+            if (photos.Count == 0)
+            {
+                return;
+            }
+
+            var photo = photos[0];
+            await using var photoStream = await photo.OpenReadAsync();
+            using var memoryStream = new MemoryStream();
+            const int maxPhotoSizeBytes = 8 * 1024 * 1024;
+            var buffer = new byte[81920];
+            int bytesRead;
+            while ((bytesRead = await photoStream.ReadAsync(buffer)) > 0)
+            {
+                if (memoryStream.Length + bytesRead > maxPhotoSizeBytes)
+                {
+                    StatusMessage = "Choose a photo smaller than 8 MB.";
+                    return;
+                }
+
+                await memoryStream.WriteAsync(buffer.AsMemory(0, bytesRead));
+            }
+
+            PhotoData = Convert.ToBase64String(memoryStream.ToArray());
+            StatusMessage = "Photo added. It will be included in the next sync.";
+        }
+        catch (FeatureNotSupportedException)
+        {
+            StatusMessage = "Photo selection is not supported on this device.";
+        }
+        catch (PermissionException)
+        {
+            StatusMessage = "Photo access was denied. Allow photo access and try again.";
+        }
+        catch (IOException exception)
+        {
+            StatusMessage = $"Could not read the selected photo: {exception.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private void RemovePhoto()
+    {
+        PhotoData = string.Empty;
+        StatusMessage = "Photo removed. Save the item to sync this change.";
     }
 
     [RelayCommand]
@@ -337,8 +493,15 @@ public partial class MainViewModel : ObservableObject
             Item_Id = deletedItemId,
             ChangeType = "Delete",
             ColumnName = "All",
-            OldValue =
-                $"Title: {item.Title}, Description: {item.Description}, Location: {item.Location}",
+            OldValue = BuildAuditSummary(
+                item.Title,
+                item.Description,
+                item.Category,
+                item.Location,
+                item.DateFound,
+                item.CollectionLocation,
+                item.CollectionDetails,
+                item.HasPhoto),
             NewValue = string.Empty,
             ChangeDate = deletedAtUtc
         };
@@ -414,8 +577,25 @@ public partial class MainViewModel : ObservableObject
 
     private void ClearForm()
     {
+        IsEditingItem = false;
         ItemTitle = string.Empty;
         Description = string.Empty;
+        ItemCategory = string.Empty;
         Location = string.Empty;
+        DateFound = DateTime.Today;
+        CollectionLocation = string.Empty;
+        CollectionDetails = string.Empty;
+        PhotoData = string.Empty;
     }
+
+    private static string BuildAuditSummary(
+        string title,
+        string description,
+        string category,
+        string location,
+        DateTime dateFound,
+        string collectionLocation,
+        string collectionDetails,
+        bool hasPhoto) =>
+        $"Title: {title}, Description: {description}, Category: {category}, Where found: {location}, Date found: {dateFound:MMM d, yyyy}, Collection location: {collectionLocation}, Collection details: {collectionDetails}, Photo attached: {hasPhoto}";
 }

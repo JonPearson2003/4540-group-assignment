@@ -1,11 +1,21 @@
 <Shell
     x:Class="ECULostAndFound.App.AppShell"
     xmlns:local="clr-namespace:ECULostAndFound.App"
-    Title="ECULostAndFound.App">
+    Title="ECULostAndFound.App"
+    Shell.TabBarBackgroundColor="#FFFFFF"
+    Shell.TabBarForegroundColor="{StaticResource Primary}"
+    Shell.TabBarTitleColor="{StaticResource Primary}"
+    Shell.TabBarUnselectedColor="#8A8090">
 
-    <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+    <TabBar>
+        <ShellContent
+            Title="Find items"
+            ContentTemplate="{DataTemplate local:BrowsePage}"
+            Route="BrowsePage" />
 
+        <ShellContent
+            Title="Manage"
+            ContentTemplate="{DataTemplate local:MainPage}"
+            Route="MainPage" />
+    </TabBar>
 </Shell>

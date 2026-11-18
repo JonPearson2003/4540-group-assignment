@@ -224,6 +224,10 @@ app.MapPost("/pushChanges", async (
         item.Description = incomingItem.Description;
         item.Category = incomingItem.Category;
         item.Location = incomingItem.Location;
+        item.DateFound = incomingItem.DateFound;
+        item.CollectionLocation = incomingItem.CollectionLocation;
+        item.CollectionDetails = incomingItem.CollectionDetails;
+        item.PhotoData = incomingItem.PhotoData;
         item.ReportType = incomingItem.ReportType;
         item.Status = incomingItem.Status;
         item.DateReported = incomingItem.DateReported;

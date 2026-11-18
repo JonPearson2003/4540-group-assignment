@@ -35,8 +35,9 @@ public static class MauiProgram
         builder.Services.AddSingleton<SyncService>();
 
         builder.Services.AddTransient<MainViewModel>();
-
         builder.Services.AddTransient<MainPage>();
+        builder.Services.AddTransient<BrowseViewModel>();
+        builder.Services.AddTransient<BrowsePage>();
 
 #if DEBUG
         builder.Logging.AddDebug();
